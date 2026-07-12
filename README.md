@@ -258,4 +258,6 @@ Made with ❤️ using **n8n**, **JavaScript** and **Bale Messenger API**
 
 </div>
 
-![](test-news-bot/test-news-bot.gif)
+<p align="center">
+  <img src="test-news-bot/test-news-bot.gif" alt="News Bot Demo" width="900">
+</p>
