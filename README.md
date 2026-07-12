@@ -258,3 +258,4 @@ Made with ❤️ using **n8n**, **JavaScript** and **Bale Messenger API**
 
 </div>
 
+![Uploading test-news-bot.gif…]()
