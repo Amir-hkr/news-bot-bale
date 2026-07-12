@@ -1,0 +1,1380 @@
+{
+  "name": "My workflow 2",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "seconds",
+              "secondsInterval": 5
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "name": "Schedule2",
+      "position": [
+        -608,
+        0
+      ],
+      "id": "69c9b21b-45b0-4fe4-83da-8aabb429ced6"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://tapi.bale.ai/bot<YOUR_BALE_BOT_TOKEN>/getUpdates",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "name": "Get Updates2",
+      "position": [
+        -384,
+        0
+      ],
+      "id": "24beaad1-a8a9-47ce-9419-8946c74edc38"
+    },
+    {
+      "parameters": {
+        "jsCode": "const updates = $json.result || [];\nconst last = updates[updates.length - 1];\n\nif (!last) return [];\n\nreturn [{\n  json: {\n    update_id: last.update_id,\n    message_id: last.message?.message_id,\n    text: last.message?.text || '',\n    chat_id: last.message?.chat?.id || '',\n    ok: true\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "name": "Parse Message2",
+      "position": [
+        -160,
+        0
+      ],
+      "id": "40797ad4-b459-4c62-85ad-f7dbc6dd432a"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value":"<YOUR_DATA_TABLE_ID>",
+          "mode": "list",
+          "cachedResultName": "news",
+          "cachedResultUrl": "/projects/ssWD8YpYcj0YgZYT/datatables/mJHpqGVAbmjieLo0"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyValue": "1"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "name": "Get Memory2",
+      "position": [
+        32,
+        0
+      ],
+      "alwaysOutputData": true,
+      "id": "f239b6f4-a638-4b88-84cc-ce1a25257b90"
+    },
+    {
+      "parameters": {
+        "jsCode": "const updateId = Number($node['Parse Message2'].json.update_id || 0);\nconst lastId = Number($node['Get Memory2'].json.last_update_id || 0);\n\nif (updateId > lastId) {\n  return [{\n    json: {\n      ok: true,\n      update_id: updateId,\n      message_id: $node['Parse Message2'].json.message_id,\n      text: $node['Parse Message2'].json.text,\n      chat_id: $node['Parse Message2'].json.chat_id\n    }\n  }];\n}\n\nreturn [];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "name": "Filter New Message2",
+      "position": [
+        224,
+        0
+      ],
+      "id": "469cfff9-b096-443c-86ab-6ac3332cb17d"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "value":"<YOUR_DATA_TABLE_ID>",
+          "mode": "list",
+          "cachedResultName": "news",
+          "cachedResultUrl": "/projects/ssWD8YpYcj0YgZYT/datatables/mJHpqGVAbmjieLo0"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyValue": "1"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "last_update_id": "={{ $json.update_id }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "last_update_id",
+              "displayName": "last_update_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "name": "Save Memory2",
+      "position": [
+        400,
+        0
+      ],
+      "id": "36986adc-ca63-41dd-91ab-d77a60168b05"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        560,
+        80
+      ],
+      "id": "679c83ec-aeb0-45ad-8126-64740272491b",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.text }}",
+                    "rightValue": "/start",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "cc192c2d-79be-4424-9515-1c1fdf83a73e"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "/start"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "9da6e083-3fe0-47be-872d-7cace9f88fa8",
+                    "leftValue": "={{ $json.text }}",
+                    "rightValue": "🏛️ اخبار سیاسی",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "🏛️ اخبار سیاسی"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "5680cbdc-9594-4252-af3b-df8331de4608",
+                    "leftValue": "={{ $json.text }}",
+                    "rightValue": "📢 اخبار حوادث",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "📢 اخبار حوادث"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "865ca553-c533-4aa3-9eaf-92f50dfde349",
+                    "leftValue": "={{ $json.text }}",
+                    "rightValue": "🌍 اخبار بین‌الملل",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "🌍 اخبار بین‌الملل"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "ef9fdeea-f13c-4f5f-94a6-d800459c28ff",
+                    "leftValue": "={{ $json.text }}",
+                    "rightValue": "💰 اخبار اقتصادی",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "💰 اخبار اقتصادی"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "988fec04-f751-4ac7-8cdf-0984a63b3be9",
+                    "leftValue": "={{ $json.text }}",
+                    "rightValue": "⚽ اخبار ورزشی",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "⚽ اخبار ورزشی"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "df8b8f3d-198e-4098-8a2e-5f97f128e737",
+                    "leftValue": "={{ $json.text }}",
+                    "rightValue": "🌱 اخبار پزشکی و سلامت",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "🌱 اخبار پزشکی و سلامت"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "81edb4dc-81b1-48ae-a99b-cbca591e858c",
+                    "leftValue": "={{ $json.text }}",
+                    "rightValue": "🤖 اخبار هوش مصنوعی",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "🤖 اخبار هوش مصنوعی "
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        736,
+        -16
+      ],
+      "id": "bd7f6682-7c8f-4a96-b316-28be4c3bc518",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://tapi.bale.ai/bot<YOUR_BALE_BOT_TOKEN>/sendMessage",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "=chat_id",
+              "value": "={{ $json.chat_id }}"
+            },
+            {
+              "name": "text",
+              "value": "لطفا یکی از گزینه ها رو انتخاب کنید"
+            },
+            {
+              "name": "reply_markup",
+              "value": "{\n  \"keyboard\": [\n    [\n      { \"text\": \"🏛️ اخبار سیاسی\" }\n    ],\n    [\n      { \"text\": \"📢 اخبار حوادث\" },\n      { \"text\": \"🌍 اخبار بین‌الملل\" }\n    ],\n    [\n      { \"text\": \"💰 اخبار اقتصادی\" },\n      { \"text\": \"⚽ اخبار ورزشی\" }\n    ],\n    [\n      { \"text\": \"🌱 اخبار پزشکی و سلامت\" },\n      {\"text\":\"🤖 اخبار هوش مصنوعی \"}\n\n    ]\n  ],\n  \"resize_keyboard\": true,\n  \"one_time_keyboard\": false\n}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1088,
+        -480
+      ],
+      "id": "25879169-9424-486f-a742-eed10671f719",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "url": "https://www.shahrekhabar.com/%D8%A7%D8%AE%D8%A8%D8%A7%D8%B1-%D8%B3%DB%8C%D8%A7%D8%B3%DB%8C",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1088,
+        -320
+      ],
+      "id": "53ef05a2-65e1-4b1a-bbfa-85c9bbb74e16",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "operation": "extractHtmlContent",
+        "extractionValues": {
+          "values": [
+            {
+              "key": "data",
+              "cssSelector": "ul.news-list-items > li",
+              "returnValue": "html",
+              "returnArray": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        1232,
+        -320
+      ],
+      "id": "259c3a52-0219-4508-bcb6-dce123b99aa1",
+      "name": "HTML1"
+    },
+    {
+      "parameters": {
+        "url": "https://tapi.bale.ai/bot<YOUR_BALE_BOT_TOKEN>/sendMessage",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "chat_id",
+              "value": "={{ $('Merge').item.json.chat_id }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.text }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1520,
+        -320
+      ],
+      "id": "cfecf33f-fb4f-4f20-b66c-dedecaee9fd7",
+      "name": "HTTP Request2"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $json.data;\n\nlet text = \"🏛️ 📰 ۸ پربیننده ترین اخبار سیاسی\\n\\n\";\n\nfor (let i = 0; i < Math.min(8, items.length); i++) {\n\n    const html = items[i];\n\n    // عنوان\n    const titleMatch = html.match(/>([^<]+)<\\/a>/);\n    const title = titleMatch ? titleMatch[1].trim() : \"بدون عنوان\";\n\n    // لینک\n    const hrefMatch = html.match(/href=\"([^\"]+)\"/);\n    const href = hrefMatch ? hrefMatch[1] : \"\";\n\n    // زمان\n    const timeMatch = html.match(/<span[^>]*class=\"[^\"]*minw80[^\"]*\"[^>]*>(.*?)<\\/span>/);\n    const time = timeMatch ? timeMatch[1].trim() : \"\";\n\n    text += `${i + 1}️⃣ ${title}\\n`;\n    text += `🕒 ${time}\\n`;\n    text += `🔗 ${href}\\n\\n`;\n}\n\nreturn [{\n    json: {\n        chat_id: $(\"Merge\").first().json.chat_id,\n        text\n    }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1376,
+        -320
+      ],
+      "id": "96f339c1-ef11-4aa2-813c-0b259bd419c1",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "url": "https://www.shahrekhabar.com/%D8%A7%D8%AE%D8%A8%D8%A7%D8%B1-%D8%AD%D9%88%D8%A7%D8%AF%D8%AB",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1088,
+        -160
+      ],
+      "id": "0f6001bc-76e5-48ec-b4b5-a9bbd99d195e",
+      "name": "HTTP Request3"
+    },
+    {
+      "parameters": {
+        "operation": "extractHtmlContent",
+        "extractionValues": {
+          "values": [
+            {
+              "key": "data",
+              "cssSelector": "ul.news-list-items > li",
+              "returnValue": "html",
+              "returnArray": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        1232,
+        -160
+      ],
+      "id": "9d5eaa50-5d9d-4585-9949-73738a8a597f",
+      "name": "HTML"
+    },
+    {
+      "parameters": {
+        "url": "https://tapi.bale.ai/bot<YOUR_BALE_BOT_TOKEN>/sendMessage",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "chat_id",
+              "value": "={{ $('Merge').item.json.chat_id }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.text }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1520,
+        -160
+      ],
+      "id": "b21dd377-b17e-4eab-ba0c-2c0aedcb46cd",
+      "name": "HTTP Request4"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $json.data;\n\nlet text = \"🏛️ 📰 ۸ پربیننده ترین اخبار حوادث\\n\\n\";\n\nfor (let i = 0; i < Math.min(8, items.length); i++) {\n\n    const html = items[i];\n\n    // عنوان\n    const titleMatch = html.match(/>([^<]+)<\\/a>/);\n    const title = titleMatch ? titleMatch[1].trim() : \"بدون عنوان\";\n\n    // لینک\n    const hrefMatch = html.match(/href=\"([^\"]+)\"/);\n    const href = hrefMatch ? hrefMatch[1] : \"\";\n\n    // زمان\n    const timeMatch = html.match(/<span[^>]*class=\"[^\"]*minw80[^\"]*\"[^>]*>(.*?)<\\/span>/);\n    const time = timeMatch ? timeMatch[1].trim() : \"\";\n\n    text += `${i + 1}️⃣ ${title}\\n`;\n    text += `🕒 ${time}\\n`;\n    text += `🔗 ${href}\\n\\n`;\n}\n\nreturn [{\n    json: {\n        chat_id: $(\"Merge\").first().json.chat_id,\n        text\n    }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1376,
+        -160
+      ],
+      "id": "c05f7784-bc89-4c4d-bd51-90398da99e58",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "url": "https://www.shahrekhabar.com/%D8%A7%D8%AE%D8%A8%D8%A7%D8%B1-%D9%88%D8%B1%D8%B2%D8%B4%DB%8C",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1120,
+        352
+      ],
+      "id": "234eeb62-0003-462c-9139-280508c77c92",
+      "name": "HTTP Request5"
+    },
+    {
+      "parameters": {
+        "operation": "extractHtmlContent",
+        "extractionValues": {
+          "values": [
+            {
+              "key": "data",
+              "cssSelector": "ul.news-list-items > li",
+              "returnValue": "html",
+              "returnArray": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        1264,
+        352
+      ],
+      "id": "67a4f8d5-bd54-4e89-9475-1d98ece2e1a9",
+      "name": "HTML2"
+    },
+    {
+      "parameters": {
+        "url": "https://tapi.bale.ai/bot<YOUR_BALE_BOT_TOKEN>/sendMessage",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "chat_id",
+              "value": "={{ $('Merge').item.json.chat_id }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.text }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1552,
+        352
+      ],
+      "id": "6ccf6a95-aa91-4903-a1e8-836410209f9a",
+      "name": "HTTP Request6"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $json.data;\n\nlet text = \"🏛️ 📰 ۸ پربیننده ترین اخبار ورزشی\\n\\n\";\n\nfor (let i = 0; i < Math.min(8, items.length); i++) {\n\n    const html = items[i];\n\n    // عنوان\n    const titleMatch = html.match(/>([^<]+)<\\/a>/);\n    const title = titleMatch ? titleMatch[1].trim() : \"بدون عنوان\";\n\n    // لینک\n    const hrefMatch = html.match(/href=\"([^\"]+)\"/);\n    const href = hrefMatch ? hrefMatch[1] : \"\";\n\n    // زمان\n    const timeMatch = html.match(/<span[^>]*class=\"[^\"]*minw80[^\"]*\"[^>]*>(.*?)<\\/span>/);\n    const time = timeMatch ? timeMatch[1].trim() : \"\";\n\n    text += `${i + 1}️⃣ ${title}\\n`;\n    text += `🕒 ${time}\\n`;\n    text += `🔗 ${href}\\n\\n`;\n}\n\nreturn [{\n    json: {\n        chat_id: $(\"Merge\").first().json.chat_id,\n        text\n    }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1408,
+        352
+      ],
+      "id": "d9edc947-2cde-4365-9825-06d4a8fc1523",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "url": "https://www.shahrekhabar.com/%D8%A7%D8%AE%D8%A8%D8%A7%D8%B1-%D8%AC%D9%87%D8%A7%D9%86",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1088,
+        16
+      ],
+      "id": "0c3b0af8-226f-4ec8-9c14-273ad831e024",
+      "name": "HTTP Request7"
+    },
+    {
+      "parameters": {
+        "operation": "extractHtmlContent",
+        "extractionValues": {
+          "values": [
+            {
+              "key": "data",
+              "cssSelector": "ul.news-list-items > li",
+              "returnValue": "html",
+              "returnArray": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        1232,
+        16
+      ],
+      "id": "d0c5fdde-2aa6-47d3-b44d-2c215a7352c4",
+      "name": "HTML3"
+    },
+    {
+      "parameters": {
+        "url": "https://tapi.bale.ai/bot<YOUR_BALE_BOT_TOKEN>/sendMessage",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "chat_id",
+              "value": "={{ $('Merge').item.json.chat_id }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.text }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1520,
+        16
+      ],
+      "id": "73219be3-d286-4547-b26b-3f2fdab0d2e4",
+      "name": "HTTP Request8"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $json.data;\n\nlet text = \"🏛️ 📰 ۸ پربیننده ترین اخبار بین الملل\\n\\n\";\n\nfor (let i = 0; i < Math.min(8, items.length); i++) {\n\n    const html = items[i];\n\n    // عنوان\n    const titleMatch = html.match(/>([^<]+)<\\/a>/);\n    const title = titleMatch ? titleMatch[1].trim() : \"بدون عنوان\";\n\n    // لینک\n    const hrefMatch = html.match(/href=\"([^\"]+)\"/);\n    const href = hrefMatch ? hrefMatch[1] : \"\";\n\n    // زمان\n    const timeMatch = html.match(/<span[^>]*class=\"[^\"]*minw80[^\"]*\"[^>]*>(.*?)<\\/span>/);\n    const time = timeMatch ? timeMatch[1].trim() : \"\";\n\n    text += `${i + 1}️⃣ ${title}\\n`;\n    text += `🕒 ${time}\\n`;\n    text += `🔗 ${href}\\n\\n`;\n}\n\nreturn [{\n    json: {\n        chat_id: $(\"Merge\").first().json.chat_id,\n        text\n    }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1376,
+        16
+      ],
+      "id": "7f30be63-05f4-4f04-88a5-d1b32c9b18f7",
+      "name": "Code in JavaScript3"
+    },
+    {
+      "parameters": {
+        "url": "https://www.shahrekhabar.com/%D8%A7%D8%AE%D8%A8%D8%A7%D8%B1-%D8%A7%D9%82%D8%AA%D8%B5%D8%A7%D8%AF%DB%8C",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1104,
+        176
+      ],
+      "id": "69f6302b-679c-49d5-bc4b-08be8e700df7",
+      "name": "HTTP Request9"
+    },
+    {
+      "parameters": {
+        "operation": "extractHtmlContent",
+        "extractionValues": {
+          "values": [
+            {
+              "key": "data",
+              "cssSelector": "ul.news-list-items > li",
+              "returnValue": "html",
+              "returnArray": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        1248,
+        176
+      ],
+      "id": "1a0e649e-8c0a-450d-bcb5-3e5ac0de51bf",
+      "name": "HTML4"
+    },
+    {
+      "parameters": {
+        "url": "https://tapi.bale.ai/bot<YOUR_BALE_BOT_TOKEN>/sendMessage",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "chat_id",
+              "value": "={{ $('Merge').item.json.chat_id }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.text }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1536,
+        176
+      ],
+      "id": "fc013a3c-3604-403d-9c34-99027da46e13",
+      "name": "HTTP Request10"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $json.data;\n\nlet text = \"🏛️ 📰 ۸ پربیننده ترین اخبار اقتصادی\\n\\n\";\n\nfor (let i = 0; i < Math.min(8, items.length); i++) {\n\n    const html = items[i];\n\n    // عنوان\n    const titleMatch = html.match(/>([^<]+)<\\/a>/);\n    const title = titleMatch ? titleMatch[1].trim() : \"بدون عنوان\";\n\n    // لینک\n    const hrefMatch = html.match(/href=\"([^\"]+)\"/);\n    const href = hrefMatch ? hrefMatch[1] : \"\";\n\n    // زمان\n    const timeMatch = html.match(/<span[^>]*class=\"[^\"]*minw80[^\"]*\"[^>]*>(.*?)<\\/span>/);\n    const time = timeMatch ? timeMatch[1].trim() : \"\";\n\n    text += `${i + 1}️⃣ ${title}\\n`;\n    text += `🕒 ${time}\\n`;\n    text += `🔗 ${href}\\n\\n`;\n}\n\nreturn [{\n    json: {\n        chat_id: $(\"Merge\").first().json.chat_id,\n        text\n    }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1392,
+        176
+      ],
+      "id": "4928051c-681d-4098-8e55-d174618d1220",
+      "name": "Code in JavaScript4"
+    },
+    {
+      "parameters": {
+        "url": "https://www.shahrekhabar.com/%D8%A7%D8%AE%D8%A8%D8%A7%D8%B1-%D9%BE%D8%B2%D8%B4%DA%A9%DB%8C-%D8%B3%D9%84%D8%A7%D9%85%D8%AA",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1120,
+        528
+      ],
+      "id": "7b56ffa2-84bc-4a5a-b836-c584077c08ee",
+      "name": "HTTP Request11"
+    },
+    {
+      "parameters": {
+        "operation": "extractHtmlContent",
+        "extractionValues": {
+          "values": [
+            {
+              "key": "data",
+              "cssSelector": "ul.news-list-items > li",
+              "returnValue": "html",
+              "returnArray": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        1264,
+        528
+      ],
+      "id": "ccdf9ac5-7407-4e90-ae6b-5a4fbe48c660",
+      "name": "HTML5"
+    },
+    {
+      "parameters": {
+        "url": "https://tapi.bale.ai/bot<YOUR_BALE_BOT_TOKEN>/sendMessage",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "chat_id",
+              "value": "={{ $('Merge').item.json.chat_id }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.text }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1552,
+        528
+      ],
+      "id": "9822f955-134f-489d-98b7-878755ef01a8",
+      "name": "HTTP Request12"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $json.data;\n\nlet text = \"🏛️ 📰 ۸ پربیننده ترین اخبار پزشکی و سلامت\\n\\n\";\n\nfor (let i = 0; i < Math.min(8, items.length); i++) {\n\n    const html = items[i];\n\n    // عنوان\n    const titleMatch = html.match(/>([^<]+)<\\/a>/);\n    const title = titleMatch ? titleMatch[1].trim() : \"بدون عنوان\";\n\n    // لینک\n    const hrefMatch = html.match(/href=\"([^\"]+)\"/);\n    const href = hrefMatch ? hrefMatch[1] : \"\";\n\n    // زمان\n    const timeMatch = html.match(/<span[^>]*class=\"[^\"]*minw80[^\"]*\"[^>]*>(.*?)<\\/span>/);\n    const time = timeMatch ? timeMatch[1].trim() : \"\";\n\n    text += `${i + 1}️⃣ ${title}\\n`;\n    text += `🕒 ${time}\\n`;\n    text += `🔗 ${href}\\n\\n`;\n}\n\nreturn [{\n    json: {\n        chat_id: $(\"Merge\").first().json.chat_id,\n        text\n    }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1408,
+        528
+      ],
+      "id": "e344b68d-ab9e-45fe-9977-1ec51c33d28c",
+      "name": "Code in JavaScript5"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://tapi.bale.ai/bot<YOUR_BALE_BOT_TOKEN>/sendMessage",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "=chat_id",
+              "value": "={{ $json.chat_id }}"
+            },
+            {
+              "name": "text",
+              "value": "لطفا یکی از گزینه ها رو انتخاب کنید"
+            },
+            {
+              "name": "reply_markup",
+              "value": "{\n  \"keyboard\": [\n    [\n      { \"text\": \"🏛️ اخبار سیاسی\" }\n    ],\n    [\n      { \"text\": \"📢 اخبار حوادث\" },\n      { \"text\": \"🌍 اخبار بین‌الملل\" }\n    ],\n    [\n      { \"text\": \"💰 اخبار اقتصادی\" },\n      { \"text\": \"⚽ اخبار ورزشی\" }\n    ],\n    [\n      { \"text\": \"🌱 اخبار پزشکی و سلامت\" },\n      {\"text\":\"🤖 اخبار هوش مصنوعی\"}\n    ]\n  ],\n  \"resize_keyboard\": true,\n  \"one_time_keyboard\": false\n}"
+            },
+            {
+              "name": "t1",
+              "value": "لطفا ققط از دکمه ها استفاده کنید🙏🏻"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1120,
+        848
+      ],
+      "id": "051f831b-8407-4d1b-9f41-147b484e1ee0",
+      "name": "HTTP Request13"
+    },
+    {
+      "parameters": {
+        "url": "https://hooshio.com/%da%a9%d8%b3%d8%a8-%d9%88-%da%a9%d8%a7%d8%b1/%d9%87%d9%88%d8%b4-%d9%85%d8%b5%d9%86%d9%88%d8%b9%db%8c-%d8%af%d8%b1-%d8%ac%d9%87%d8%a7%d9%86/",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1120,
+        672
+      ],
+      "id": "560d25b2-dfcd-4e59-b4a7-2514e90c107b",
+      "name": "HTTP Request14"
+    },
+    {
+      "parameters": {
+        "operation": "extractHtmlContent",
+        "extractionValues": {
+          "values": [
+            {
+              "key": "data",
+              "cssSelector": "article.elementor-post",
+              "returnValue": "html",
+              "returnArray": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        1264,
+        672
+      ],
+      "id": "d8d1bff4-a3c2-4272-893c-05982e4ab833",
+      "name": "HTML6"
+    },
+    {
+      "parameters": {
+        "url": "https://tapi.bale.ai/bot<YOUR_BALE_BOT_TOKEN>/sendMessage",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "chat_id",
+              "value": "={{ $('Merge').item.json.chat_id }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.text }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1552,
+        672
+      ],
+      "id": "b09d3644-aa5b-47c0-acfc-877b6c081e2c",
+      "name": "HTTP Request15"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $json.data;\n\nlet text = \"🤖 8 خبر جدید هوش مصنوعی\\n\\n\";\n\nfor (let i = 0; i < Math.min(8, items.length); i++) {\n\n    const html = items[i];\n\n    // لینک عنوان\n    const hrefMatch = html.match(/<h2[^>]*class=\"elementor-post__title\"[\\s\\S]*?<a[^>]*href=\"([^\"]+)\"/);\n    const href = hrefMatch ? hrefMatch[1] : \"\";\n\n    // عنوان\n    const titleMatch = html.match(/<h2[^>]*class=\"elementor-post__title\"[\\s\\S]*?<a[^>]*>([\\s\\S]*?)<\\/a>/);\n    const title = titleMatch\n        ? titleMatch[1].replace(/\\s+/g, \" \").trim()\n        : \"بدون عنوان\";\n\n    // تاریخ\n    const dateMatch = html.match(/<span[^>]*class=\"elementor-post-date\"[^>]*>([\\s\\S]*?)<\\/span>/);\n    const date = dateMatch\n        ? dateMatch[1].replace(/\\s+/g, \" \").trim()\n        : \"\";\n\n    text += `${i + 1}️⃣ ${title}\\n`;\n    text += `📅 ${date}\\n`;\n    text += `🔗 ${href}\\n\\n`;\n}\n\nreturn [{\n    json: {\n        chat_id: $(\"Merge\").first().json.chat_id,\n        text\n    }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1408,
+        672
+      ],
+      "id": "93503884-a3e3-4854-a45e-10d36e807998",
+      "name": "Code in JavaScript6"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule2": {
+      "main": [
+        [
+          {
+            "node": "Get Updates2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Updates2": {
+      "main": [
+        [
+          {
+            "node": "Parse Message2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Message2": {
+      "main": [
+        [
+          {
+            "node": "Get Memory2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Memory2": {
+      "main": [
+        [
+          {
+            "node": "Filter New Message2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter New Message2": {
+      "main": [
+        [
+          {
+            "node": "Save Memory2",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Save Memory2": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request7",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request9",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request5",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request11",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request14",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request13",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "HTML1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTML1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request3": {
+      "main": [
+        [
+          {
+            "node": "HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTML": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request5": {
+      "main": [
+        [
+          {
+            "node": "HTML2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTML2": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request7": {
+      "main": [
+        [
+          {
+            "node": "HTML3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTML3": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript3": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request8",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request9": {
+      "main": [
+        [
+          {
+            "node": "HTML4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTML4": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript4": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request10",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request11": {
+      "main": [
+        [
+          {
+            "node": "HTML5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTML5": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript5": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request12",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request14": {
+      "main": [
+        [
+          {
+            "node": "HTML6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTML6": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript6": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request15",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "ebafff22-fa81-40db-b8b7-aa979b079211",
+  "meta": {
+    "instanceId":"<INSTANCE_ID>"
+  },
+  "nodeGroups": [],
+  "id": "MNix3KXHPWQcMa7w",
+  "tags": []
+}
